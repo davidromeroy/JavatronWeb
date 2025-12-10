@@ -41,11 +41,11 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // --- ICONOS ---
-        const Icon = ({ path, size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>
+        const Icon = ({ path, size = 24, className = "", fill = "none" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>
         );
 
         const icons = {
@@ -66,7 +66,9 @@
             Facebook: <Icon path={<><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></>} />,
             Instagram: <Icon path={<><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></>} />,
             TikTok: <Icon path={<><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5v3a8 8 0 0 1-8-8z"></path></>} />,
-            Star: <Icon path={<><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></>} />,
+            Star: <Icon fill="currentColor" path={<><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></>} />,
+            // CAMBIO 1: Agregado ícono de media estrella (Contorno completo + relleno izquierdo)
+            StarHalf: <Icon path={<><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /><path d="M12 2 L8.91 8.26 L2 9.27 L7 14.14 L5.82 21.02 L12 17.77 V2 Z" fill="currentColor" stroke="none" /></>} />,
             Camera: <Icon path={<><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></>} />,
         };
 
@@ -117,12 +119,12 @@
         const ProjectCarousel = () => {
             const images = [
                 {
-                    url: "https://images.unsplash.com/photo-1593640408182-31c70c8268f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
+                    url: "img/WhatsApp Image 2025-12-06 at 13.42.30.jpeg",//"https://images.unsplash.com/photo-1593640408182-31c70c8268f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
                     title: "Mantenimiento Profundo",
                     desc: "Limpieza detallada de componentes"
                 },
                 {
-                    url: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
+                    url: "img/WhatsApp Image 2025-12-06 at 13.42.22.jpeg",//"https://images.unsplash.com/photo-1587202372775-e229f172b9d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
                     title: "Setup Gamer Completo",
                     desc: "Armado y gestión de cables"
                 },
@@ -176,11 +178,24 @@
             );
         };
 
-        const TestimonialCard = ({ name, text, service }) => (
+        // CAMBIO 2: Lógica de rating (acepta decimales)
+        const TestimonialCard = ({ name, text, service, rating = 5 }) => (
             <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700 flex flex-col h-full relative">
                 <div className="absolute -top-3 left-6 bg-neutral-900 px-2">
                     <div className="flex text-orange-500 gap-1">
-                        {[...Array(5)].map((_, i) => <span key={i} className="fill-current">{React.cloneElement(icons.Star, { size: 14 })}</span>)}
+                        {[...Array(5)].map((_, i) => {
+                            const index = i + 1;
+                            if (rating >= index) {
+                                // Estrella llena
+                                return <span key={i}>{React.cloneElement(icons.Star, { size: 14, fill: "currentColor" })}</span>;
+                            } else if (rating >= index - 0.5) {
+                                // Media estrella (usamos fill="none" para el wrapper porque el icono ya tiene relleno interno)
+                                return <span key={i}>{React.cloneElement(icons.StarHalf, { size: 14, fill: "none" })}</span>;
+                            } else {
+                                // Estrella vacía
+                                return <span key={i}>{React.cloneElement(icons.Star, { size: 14, fill: "none" })}</span>;
+                            }
+                        })}
                     </div>
                 </div>
                 <p className="text-neutral-300 mb-6 italic flex-grow">"{text}"</p>
@@ -191,10 +206,45 @@
             </div>
         );
 
+        const GalleryCarousel = ({ items }) => {
+            const [current, setCurrent] = useState(0);
+            useEffect(() => {
+                const interval = setInterval(() => setCurrent((prev) => (prev + 1) % items.length), 4000); 
+                return () => clearInterval(interval);
+            }, [items.length]);
+            return (
+                <div className="relative rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl bg-neutral-900 h-[300px] md:h-[500px] group">
+                    {items.map((item, index) => (
+                        <div key={index} className={`absolute inset-0 transition-opacity duration-1000 ${index === current ? 'opacity-100' : 'opacity-0'}`}>
+                            <img src={item.url} alt={item.title} className="w-full h-full object-cover"/>
+                            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-transparent to-transparent opacity-90"></div>
+                            <div className="absolute bottom-8 left-8">
+                                <h3 className="text-2xl font-bold text-white mb-2">{item.title}</h3>
+                                <p className="text-neutral-300">{item.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                    <div className="absolute bottom-4 right-8 flex gap-2">
+                        {items.map((_, idx) => (
+                            <div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx === current ? 'w-8 bg-red-600' : 'w-2 bg-neutral-600'}`} />
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
         // --- APP PRINCIPAL ---
         const App = () => {
             const [isScrolled, setIsScrolled] = useState(false);
             const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const selectRef = useRef(null); 
+            
+            // TUS FOTOS DE TRABAJOS REALES
+            const galleryImages = [
+                { url: "img/trabajo-1.jpg", title: "Limpieza Detallada", desc: "Mantenimiento profundo de ventiladores" },
+                { url: "img/trabajo-2.jpg", title: "Diagnóstico Laptop", desc: "Revisión interna completa HP" },
+                { url: "img/trabajo-3.jpg", title: "Sistema de Tinta", desc: "Mantenimiento de impresoras" }
+            ];
             
             const [formData, setFormData] = useState({
                 nombre: '',
@@ -211,7 +261,14 @@
             const handleSelectPlan = (serviceName) => {
                 setFormData(prevState => ({ ...prevState, servicio: serviceName }));
                 const contactSection = document.getElementById('contacto');
-                if (contactSection) contactSection.scrollIntoView({ behavior: 'smooth' });
+                if (contactSection) {
+                    contactSection.scrollIntoView({ behavior: 'smooth' });
+                    setTimeout(() => {
+                        if(selectRef.current) {
+                            selectRef.current.focus();
+                        }
+                    }, 800);
+                }
             };
 
             const handleSubmit = (e) => {
@@ -292,7 +349,7 @@
                         )}
                     </nav>
 
-                    {/* Hero Section (Fijo) */}
+                    {/* Hero Section */}
                     <section id="inicio" className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden flex items-center min-h-[90vh]">
                         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-red-600/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
                         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-orange-600/5 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4"></div>
@@ -327,7 +384,7 @@
 
                                     <div className="pt-8 flex justify-center lg:justify-start gap-8 border-t border-neutral-800 mt-8">
                                         <div>
-                                            <p className="text-3xl font-black text-white">500+</p>
+                                            <p className="text-3xl font-black text-white">200+</p>
                                             <p className="text-xs text-neutral-500 uppercase tracking-widest">Equipos Reparados</p>
                                         </div>
                                         <div>
@@ -416,25 +473,21 @@
                         </div>
                     </section>
 
-                    {/* GALERÍA DE TRABAJOS (Carrusel Aparte) */}
+                    {/* GALERÍA */}
                     <section id="galeria" className="py-24 bg-neutral-950 border-t border-neutral-900">
                         <div className="container mx-auto px-6">
                             <div className="flex flex-col md:flex-row gap-12 items-center">
                                 <div className="w-full md:w-1/2">
                                     <div className="flex items-center gap-2 mb-4 text-red-500 font-bold uppercase tracking-widest text-sm">
-                                        {React.cloneElement(icons.Camera, { size: 18 })}
+                                        <div className="w-4 h-4 rounded-full bg-red-600 animate-pulse"></div>
                                         <span>Nuestro Trabajo</span>
                                     </div>
                                     <h2 className="text-3xl lg:text-4xl font-black text-white mb-6">Resultados que hablan por sí solos</h2>
-                                    <p className="text-neutral-400 text-lg mb-8 leading-relaxed">
-                                        Cada equipo que pasa por nuestras manos recibe el máximo cuidado. Desde la gestión de cables hasta la limpieza más profunda, nos aseguramos de que tu PC luzca y funcione como nueva.
-                                    </p>
-                                    <button onClick={() => scrollToSection('contacto')} className="text-white border-b border-red-500 pb-1 hover:text-red-500 transition-colors">
-                                        Quiero un resultado así
-                                    </button>
+                                    <p className="text-neutral-400 text-lg mb-8 leading-relaxed">Cada equipo que pasa por nuestras manos recibe el máximo cuidado. Desde la gestión de cables hasta la limpieza más profunda, nos aseguramos de que tu PC luzca y funcione como nueva.</p>
+                                    <button onClick={() => scrollToSection('contacto')} className="text-white border-b border-red-500 pb-1 hover:text-red-500 transition-colors">Quiero un resultado así</button>
                                 </div>
                                 <div className="w-full md:w-1/2">
-                                    <ProjectCarousel />
+                                    <GalleryCarousel items={galleryImages} />
                                 </div>
                             </div>
                         </div>
@@ -487,7 +540,7 @@
                         </div>
                     </section>
 
-                    {/* Testimonials (Nuevos datos) */}
+                    {/* Testimonials */}
                     <section className="py-20 bg-neutral-950 border-t border-neutral-800">
                         <div className="container mx-auto px-6 text-center">
                             <h3 className="text-2xl font-bold text-white mb-12">Lo que dicen nuestros clientes</h3>
@@ -502,9 +555,11 @@
                                     service="Mantenimiento PRO"
                                     text="Mi laptop se calentaba muchísimo y sonaba como turbina. Después del mantenimiento Pro bajaron como 20 grados las temperaturas. Excelente trabajo."
                                 />
+                                {/* CAMBIO 3: Rating de 4.5 para Daniela */}
                                 <TestimonialCard 
                                     name="Daniela L."
                                     service="Sistema Operativo"
+                                    rating={4.5}
                                     text="Pensé que mi compu vieja ya no servía, pero con el formateo y el SSD que me recomendaron quedó volando. Me ahorraron comprar una nueva."
                                 />
                             </div>
@@ -535,7 +590,7 @@
                                             </div>
                                             <div>
                                                 <h4 className="text-white font-bold">Visítanos</h4>
-                                                <p className="text-neutral-500 group-hover:text-neutral-400 transition-colors">Av. Principal 123, Centro Tecnológico</p>
+                                                <p className="text-neutral-500 group-hover:text-neutral-400 transition-colors">Av. 25 de Junio y Babahoyo. Pasando Fybeca. Machala</p>
                                             </div>
                                         </div>
                                         
@@ -598,6 +653,7 @@
                                         <div className="space-y-2 mb-6">
                                             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wide ml-1">Servicio de interés</label>
                                             <select 
+                                                ref={selectRef}
                                                 name="servicio"
                                                 value={formData.servicio}
                                                 onChange={handleInputChange}
@@ -644,8 +700,7 @@
                                     <a href="https://www.facebook.com/p/Javatron-100083201293784/" target="_blank" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center text-neutral-400 hover:bg-red-600 hover:text-white transition-all">
                                         {React.cloneElement(icons.Facebook, { size: 20 })}
                                     </a>
-                                    <a href="#" target="_blank" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center text-neutral-400 hover:bg-red-600 hover:text-white transition-all">
-                                        {/* Placeholder link for TikTok, update with real link */}
+                                    <a href="https://www.tiktok.com/@javatron?_r=1&_t=ZM-920DPl1BH91" target="_blank" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center text-neutral-400 hover:bg-red-600 hover:text-white transition-all">
                                         {React.cloneElement(icons.TikTok, { size: 20 })}
                                     </a>
                                     <a href="https://www.instagram.com/javatron.v/" target="_blank" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center text-neutral-400 hover:bg-red-600 hover:text-white transition-all">
